@@ -39,10 +39,10 @@ This module is for example purposes only.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| <a name="input_location"></a> [location](#input\_location) | The primary region into which resources will be deployed. | `string` | n/a | yes |
 | <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | The name of the resource group into which resources will be deployed. | `string` | n/a | yes |
 | <a name="input_additional_subnets"></a> [additional\_subnets](#input\_additional\_subnets) | A list of objects describing additional subnets to be deployed, in the format:<pre>[<br>  {<br>    name = "ExampleSubnet"<br>    size = 24<br>  }<br>]</pre> | <pre>list(object({<br>    name = string<br>    size = optional(number)<br>  }))</pre> | `[]` | no |
 | <a name="input_address_space"></a> [address\_space](#input\_address\_space) | The CIDR range assign as the root address space for the virtual network. | `string` | `"10.24.0.0/24"` | no |
-| <a name="input_location"></a> [location](#input\_location) | The primary region into which resources will be deployed. | `string` | `"uksouth"` | no |
 | <a name="input_private_dns_zones"></a> [private\_dns\_zones](#input\_private\_dns\_zones) | A list of private DNS zone names to create and link to the virtual network. Useful for isolated environments. | `list(string)` | `[]` | no |
 | <a name="input_resource_name"></a> [resource\_name](#input\_resource\_name) | An object used to assign resource names to resources deployed in this module, in the format:<pre>{<br>  virtual_network = "vnet-example"<br>}</pre>Resource names marked as optional will be randomly generated unless specified. | <pre>object({<br>    virtual_network = optional(string)<br>  })</pre> | `{}` | no |
 | <a name="input_resource_tags"></a> [resource\_tags](#input\_resource\_tags) | A map of key/value pairs to be assigned as resource tags on taggable resources. | `map(string)` | `{}` | no |

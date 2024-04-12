@@ -24,7 +24,6 @@ variable "address_space" {
 }
 
 variable "location" {
-  default     = "uksouth"
   description = "The primary region into which resources will be deployed."
   type        = string
 }
