@@ -1,4 +1,4 @@
-# 01 Example Storage
+# 01 Example App Service
 
 This stack is for example purposes only.
 

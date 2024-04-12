@@ -1,4 +1,4 @@
-# Example Storage
+# Example App Service
 
 This module is for example purposes only.
 

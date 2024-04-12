@@ -3,7 +3,7 @@ include {
 }
 
 terraform {
-  source = "${get_repo_root()}//platform/stacks/02-example-storage"
+  source = "${get_repo_root()}//platform/stacks/02-example-app-service"
 }
 
 dependency "dev_uksouth_01_example" {
