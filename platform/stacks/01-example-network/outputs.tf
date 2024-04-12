@@ -11,6 +11,11 @@ output "private_dns_zone_ids" {
   value       = module.example_network.private_dns_zone_ids
 }
 
+output "resource_group_name" {
+  description = "The name of the resource group used for this stack."
+  value       = azurerm_resource_group.example_network.name
+}
+
 output "virtual_network_id" {
   description = "The ID of the virtual network."
   value       = module.example_network.virtual_network_id

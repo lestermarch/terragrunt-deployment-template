@@ -42,6 +42,7 @@ This stack is for example purposes only.
 | Name | Description |
 |------|-------------|
 | <a name="output_private_dns_zone_ids"></a> [private\_dns\_zone\_ids](#output\_private\_dns\_zone\_ids) | A map of private DNS zones to IDs, in the format:<pre>{<br>  privatelink.blob.core.windows.net = "/subscriptions/.../privateDnsZones/privatelink.blob.core.windows.net"<br>  privatelink.example.azure.com      = "/subscriptions/.../privateDnsZones/privatelink.example.azure.com"<br>}</pre> |
+| <a name="output_resource_group_name"></a> [resource\_group\_name](#output\_resource\_group\_name) | The name of the resource group used for this stack. |
 | <a name="output_virtual_network_id"></a> [virtual\_network\_id](#output\_virtual\_network\_id) | The ID of the virtual network. |
 | <a name="output_virtual_network_subnet_ids"></a> [virtual\_network\_subnet\_ids](#output\_virtual\_network\_subnet\_ids) | A map of subnet names to IDs, in the format:<pre>{<br>  SubnetOne = "/subscriptions/.../subnets/SubnetOne"<br>  SubnetTwo = "/subscriptions/.../subnets/SubnetTwo"<br>}</pre> |
 <!-- END_TF_DOCS -->

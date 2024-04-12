@@ -44,4 +44,5 @@ This stack is for example purposes only.
 |------|-------------|
 | <a name="output_app_service_id"></a> [app\_service\_id](#output\_app\_service\_id) | The ID of the app service. |
 | <a name="output_app_service_plan_id"></a> [app\_service\_plan\_id](#output\_app\_service\_plan\_id) | The ID of the app service plan. |
+| <a name="output_resource_group_name"></a> [resource\_group\_name](#output\_resource\_group\_name) | The name of the resource group used for this stack. |
 <!-- END_TF_DOCS -->
