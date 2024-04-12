@@ -6,7 +6,7 @@ terraform {
   source = "${get_repo_root()}//platform/stacks/02-example-app-service"
 }
 
-dependency "dev_uksouth_01_example" {
+dependency "dev_uksouth_01_example_network" {
   config_path = "${get_repo_root()}//platform/environments/dev/uksouth/01-example-network"
 
   mock_outputs_allowed_terraform_commands = ["validate", "plan"]

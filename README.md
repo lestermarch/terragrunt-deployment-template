@@ -183,7 +183,109 @@ The `workflow_dispatch` deployment type is manually triggered. Deployment parame
 | Region | `all`, `<region>` | Requires an environment to be specified.<br><br>When `all` is selected, the deployment will be scoped to all stacks, in all regions, in the specified environment. <br><br>When a specific region is selected, the deployment will be scoped to all stacks in the specified region, in the specified environment. | `all` |
 | Stack | `all`, `<stack>` | Requires an environment and region to be specified. <br><br>When `all` is selected, the deployment will be scoped to all stacks, in the specified region and environment. <br><br>When a specified stack is selected, the deployment will be scoped to the specified stack in the specified region and environment. | `all` |
 
-This approach allows for easily scoping a deployment from either a single stack of infrastructure, to a whole region, environment, or cross-environment workload.
+This approach allows for easily scoping a deployment from a single stack of infrastructure, to a whole region, environment, or cross-environment workload.
 
 > [!Note]
 > Setting a specific lower-level scope will not be honoured if a higher-level scope is set to `all`. For example, a deployment scoped to `environment: dev`, `region: all`, `stack: network` will deploy all stacks in all regions in the `dev` environment, as `region` is set to `all` and so overrides the fact that `stack` is set to `network`. Stack-specific multi-region/environment deployments are not yet supported.
+
+### Scaling the Solution
+
+The structure of this repository is designed to offer maximal scalability in terms of deployment scope. The skeletal structure of the [environments](/platform/environments/) directory lends itself well to extension whilst allowing re-use of stacks and modules, keeping the codebase [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself).
+
+#### Environments
+
+Adding an environment requires creating a new folder under the [environments](/platform/environments/) directory. The environment folder should match the environment name and must contain an `environment.hcl` file with at least an `input` block as follows:
+
+```hcl
+inputs = {
+  environment = "<name>"
+}
+```
+
+> [!Note]
+>
+> - The `inputs` block can be used to define environment-specific input variables. Any environment-specific inputs defined here are merged with any other inputs defined in the `location.hcl` and `terragrunt.hcl` files in the child region and stack folders.
+
+#### Regions
+
+Adding a region requires creating a new folder under the appropriate environment directory. The region folder name should match the Azure region name in CLI format and must contain a `location.hcl` file with at least an `input` block as follows:
+
+```hcl
+inputs = {
+  location = "<location>"
+}
+```
+
+> [!Note]
+>
+> - The `inputs` block can be used to define region-specific input variables. Any region-specific inputs defined here are merged with any other inputs defined in the parent `environment.hcl` file and `terragrunt.hcl` files in the child stack folders.
+
+#### Stacks
+
+Adding a stack to a region requires creating a new folder under the appropriate region directory. The stack folder name should match the stack folder under the main [stacks](/platform/stacks/) directory and must contain a `terragrunt.hcl` file with at least the `include`, `terraform`, and `inputs` blocks as follows:
+
+```hcl
+include {
+  path = find_in_parent_folders("deployment.hcl")
+}
+
+terraform {
+  source = "${get_repo_root()}//platform/stacks/<stack>"
+}
+
+inputs = {}
+```
+
+> [!Note]
+>
+> - The `include` block references the [root Terragrunt configuration](/platform/environments/deployment.hcl).
+> - The `terraform` block references the [stack](/platform/stacks/) being deployed.
+> - The `inputs` block can be used to define stack-specific input variables. Consider this equivalent to a `tfvars` file. Any stack-specific inputs defined here are merged with any other inputs defined in the `location.hcl` and `environment.hcl` files in the parent region and environment folders.
+> - A `dependency` block is required for stacks which depend on resources deployed in other stacks and offers a way to pass outputs from the dependee stack to the dependent stack. See [stack dependencies](#stack-dependencies).
+
+#### Stack Dependencies
+
+Complex deployments will eventually necessitate dependencies between stacks. Indeed this is often the case when multiple providers are used. For example, a first stack may deploy an AKS cluster using the AzureRM provider, and a second stack may deploy Kubernetes resources into the AKS cluster using the Kubernetes provider which will depend on the AKS cluster having already been created in order to authenticate.
+
+Terragrunt offers a mechanism for passing outputs from one stack (dependee) as the inputs to another stack (dependent) through the use of the `dependency` block. One or more `dependency` blocks may be defined within the `terragrunt.hcl` file for a dependent stack.
+
+Once a dependency is defined, Terragrunt will orchestrate deployments by arranging stacks into deployment groups. Stacks will be deployed one group at a time. Stacks not dependent on each other may form part of the same deployment group and can be deployed in parallel, up to the degree of parallelism specified (`--terragrunt-parallelism`).
+
+##### Dependencies and Mocks
+
+The below `dependency` and `input` block show an example of a stack which has a dependency on an output from another stack in the same environment region:
+
+```hcl
+dependency "dev_uksouth_01_example" {
+  config_path = "${get_repo_root()}//platform/environments/dev/uksouth/01-example"
+
+  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
+  mock_outputs_merge_strategy_with_state  = "shallow"
+  mock_outputs = {
+    app_service_integration_subnet_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-mock/providers/Microsoft.Network/privateDnsZones/privatelink.azurewebsites.net"
+    # ...
+  }
+
+  inputs = {
+    app_service_integration_subnet_id = dependency.dev_uksouth_01_example.virtual_network_subnet_ids["AppServiceIntegrationSubnet"]
+    # ...
+}
+```
+
+The above example also showcases the use of mock values when running `validate` and `plan` commands. This allows plans to succeed based on mock values even in cases where the dependee stack has not yet been applied. During deployment, Terragrunt will orchestrate the deployment such that the dependee stack is deployed prior to the dependent stack, and once deployed will use the real output values from the dependee stack instead of the mock values.
+
+> [!Tip]
+> It is recommended to align dependency names to their hierarchy. For example, if the stack depends on the `01-example` stack in the `uksouth` region of the `dev` environment, then the dependency name should be similar to `dev_uksouth_01_example` for clarity.
+
+##### Forced Dependencies
+
+Occasionally, a stack should depend on another stack despite not requiring any inputs from the dependee stack. In these cases a `dependency` block can still be added to allow Terragrunt to produce a stack dependency graph and split stacks into deployment groups. However, note the use of the `skip_outputs` attribute to facilitate this scenario:
+
+```hcl
+dependency "dev_uksouth_01_example" {
+  config_path  = "${get_repo_root()}//platform/environments/dev/uksouth/01-example"
+  skip_outputs = true
+}
+
+inputs = {}
+```
