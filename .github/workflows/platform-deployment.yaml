@@ -1,0 +1,144 @@
+name: 'Platform Deployment'
+run-name: '${{ inputs.mode }} ${{ inputs.environment}}/${{ inputs.region }}/${{ inputs.stack}} ${{ github.event.head_commit.message }}'
+
+on:
+  workflow_dispatch:
+    inputs:
+      # The mode of operation for Terragrunt
+      mode:
+        default: 'Plan'
+        description: 'Mode:'
+        required: true
+        type: choice
+        options:
+          - 'Plan'
+          - 'Apply'
+
+      # The environment deployment scope
+      environment:
+        default: 'all'
+        description: 'Environment:'
+        required: true
+        type: choice
+        options:
+          - 'all'
+          - 'dev'
+          - 'prod'
+
+      # The region deployment scope
+      region:
+        default: 'all'
+        description: 'Region:'
+        required: true
+        type: choice
+        options:
+          - 'all'
+          - 'uksouth'
+
+      # The stack deployment scope
+      stack:
+        default: 'all'
+        description: 'Stack:'
+        required: true
+        type: choice
+        options:
+          - 'all'
+          - '01-example-network'
+          - '02-example-app-service'
+
+env:
+  TERRAFORM_VERSION:
+  TERRAGRUNT_VERSION:
+
+permissions:
+  contents: 'read'
+  id-token: 'write'
+
+jobs:
+  terragrunt:
+    # Run Terragrunt in the selected mode
+    name: 'Terragrunt ${{ inputs.mode }}'
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+
+    env:
+      # Required for AzureRM service principal authentication
+      ARM_CLIENT_ID: ${{ var.ARM_CLIENT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ vars.ARM_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ var.ARM_TENANT_ID }}
+      ARM_USE_OIDC: true
+
+    steps:
+      # Checkout the repo
+      - name: 'Checkout'
+        uses: actions/checkout@v3
+
+      # Install Terraform on the GitHub runner
+      - name: 'Setup Terraform'
+        run: |
+          sudo apt-get install -y unzip
+          curl -L -o terraform https://releases.hashicorp.com/terraform/${{ env.TERRAFORM_VERSION }}/terraform_${{ env.TERRAFORM_VERSION }}_linux_amd64.zip
+          unzip -o terraform && chmod +x terraform
+          sudo mv terraform /usr/local/bin/
+          terraform -v
+
+      # Install Terragrunt on the GitHub runner
+      - name: 'Setup Terragrunt'
+        run: |
+          curl -L -o terragrunt https://github.com/gruntwork-io/terragrunt/releases/download/${{ env.TERRAGRUNT_VERSION }}/terragrunt_linux_amd64
+          chmod +x terragrunt
+          sudo mv terragrunt /usr/local/bin/
+          terragrunt -v
+
+      # Login to Azure using the service principal
+      - name: 'Azure Login'
+        uses: azure/login@v1
+        with:
+          client-id: ${{ env.ARM_CLIENT_ID }}
+          subscription-id: ${{ env.ARM_SUBSCRIPTION_ID }}
+          tenant-id: ${{ env.ARM_TENANT_ID }}
+          enable-AzPSSession: true
+
+      # Determine the deployment scope and run type
+      - name: 'Deployment Scope'
+        id: deployment_scope
+        run: |
+          if [[ '${{ inputs.environment }}' == 'all' ]]; then
+            SCOPE='platform/environments'
+            RUN_TYPE='run-all'
+
+          elif [[ '${{ inputs.region }}' == 'all' ]]; then
+            SCOPE='platform/environments/${{ inputs.environment }}'
+            RUN_TYPE='run-all'
+
+          elif [[ '${{ inputs.stack }}' == 'all' ]]; then
+            SCOPE='platform/environment/${{ inputs.environment}}/${{ inputs.region }}'
+            RUN_TYPE='run-all'
+
+          else
+            SCOPE='platform/environment/${{ inputs.environment}}/${{ inputs.region }}/${{ inputs.stack }}'
+            RUN_TYPE=''
+          fi
+
+          echo "Deployment scope: $SCOPE"
+          echo "scope=$SCOPE" >> $GITHUB_OUTPUT
+          echo "run_type=$RUN_TYPE" >> $GITHUB_OUTPUT
+
+      # Initialise then plan or apply the target scope
+      - name: 'Terragrunt ${{ inputs.mode }}'
+        run: |
+          RUN='${{ steps.deployment_scope.outputs.run_type }}'
+          MODE='${{ inputs.mode }}' && MODE=$(echo ${MODE,,})
+          DIR='${{ steps.deployment_scope.outputs.scope }}'
+          AUTO=$([ $MODE != 'plan' ] && echo '-auto-approve' || echo '')
+
+          export ARM_CLIENT_ID=${{ env.ARM_CLIENT_ID }}
+          export ARM_SUBSCRIPTION_ID=${{ env.ARM_SUBSCRIPTION_ID }}
+          export ARM_TENANT_ID=${{ env.ARM_TENANT_ID }}
+          export ARM_USE_OIDC=${{ env.ARM_USE_OIDC }}
+
+          terragrunt $RUN $MODE $AUTO \
+            --terragrunt-working-dir $DIR \
+            --terragrunt-include-external-dependencies \
+            --terragrunt-non-interactive
