@@ -3,7 +3,7 @@
 This repository provides an example structure for using [Terragrunt](https://terragrunt.gruntwork.io/) to orchestrate multiple Terraform deployments in a way that increases the scalability of Terraform whilst minimising the increase in management overhead.
 
 > [!Note]
-> This repository is designed for deployments to Microsoft Azure, but may be adapated for use with other public or private cloud providers.
+> This repository is designed for deployments to Microsoft Azure, but may be adapted for use with other public or private cloud providers.
 
 ## Problem Statement
 
@@ -98,7 +98,7 @@ The below sections describe how to use this deployment methodology either manual
 > [!Note]
 > Before running deployments, please see the [platform](/platform/) documentation for guidance on pre-requisite setup, including creating a managed identity for deployments, a storage account for shared state, and initial Terragrunt configuration.
 
-### Manual Scoped Deployments
+### Manually Scoped Deployments
 
 Deployments can either be performed against all environments, specific environments, specific regions within an environment, or a specific stack within an environment region.
 
