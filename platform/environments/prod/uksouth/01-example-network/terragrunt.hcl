@@ -6,4 +6,6 @@ terraform {
   source = "${get_repo_root()}//platform/stacks/01-example-network"
 }
 
-inputs = {}
+inputs = {
+  virtual_network_address_space = "10.20.0.0/24"
+}

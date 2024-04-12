@@ -35,7 +35,7 @@ This stack is for example purposes only.
 |------|-------------|------|---------|:--------:|
 | <a name="input_environment"></a> [environment](#input\_environment) | The short-name of the environment context. | `string` | n/a | yes |
 | <a name="input_location"></a> [location](#input\_location) | The primary region into which resources will be deployed. | `string` | n/a | yes |
-| <a name="input_virtual_network_address_space"></a> [virtual\_network\_address\_space](#input\_virtual\_network\_address\_space) | The CIDR range assign as the root address space for the virtual network. | `string` | `"10.10.0.0/24"` | no |
+| <a name="input_virtual_network_address_space"></a> [virtual\_network\_address\_space](#input\_virtual\_network\_address\_space) | The CIDR range assign as the root address space for the virtual network. | `string` | `"10.24.0.0/24"` | no |
 
 ## Outputs
 

@@ -9,7 +9,7 @@ variable "location" {
 }
 
 variable "virtual_network_address_space" {
-  default     = "10.10.0.0/24"
+  default     = "10.24.0.0/24"
   description = "The CIDR range assign as the root address space for the virtual network."
   type        = string
 }
